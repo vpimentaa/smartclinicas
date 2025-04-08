@@ -94,6 +94,30 @@ export type Professional = {
   updated_at: string
 }
 
+export type Address = {
+  street: string
+  number: string
+  complement: string
+  neighborhood: string
+  city: string
+  state: string
+  zip_code: string
+}
+
+export type PatientData = {
+  name: string
+  cpf: string
+  phone: string
+  email: string
+  birth_date: string
+  gender: string
+  address: Address
+  medical_history: string
+  allergies: string
+  medications: string
+  account_id: string
+}
+
 // Helper functions for clinics
 export const getClinics = async () => {
   const { data, error } = await supabase
@@ -258,27 +282,7 @@ export const deleteProfessional = async (id: string) => {
   if (error) throw error
 }
 
-export async function createPatient(patientData: {
-  name: string
-  cpf: string
-  phone: string
-  email: string
-  birth_date: string
-  gender: string
-  address: {
-    street: string
-    number: string
-    complement: string
-    neighborhood: string
-    city: string
-    state: string
-    zip_code: string
-  }
-  medical_history: string
-  allergies: string
-  medications: string
-  account_id: string
-}) {
+export async function createPatient(patientData: PatientData) {
   try {
     console.log('Creating patient with data:', patientData)
     
@@ -286,7 +290,7 @@ export async function createPatient(patientData: {
       .from('patients')
       .insert([{
         ...patientData,
-        address: patientData.address as any // Cast to any to allow JSONB insertion
+        address: patientData.address
       }])
       .select()
       .single()
@@ -298,7 +302,7 @@ export async function createPatient(patientData: {
 
     console.log('Patient created successfully:', data)
     return data
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in createPatient:', error)
     throw error
   }

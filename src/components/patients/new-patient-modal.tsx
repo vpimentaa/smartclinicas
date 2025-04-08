@@ -118,15 +118,16 @@ export function NewPatientModal({ isOpen, onClose, accountId }: NewPatientModalP
       queryClient.invalidateQueries({ queryKey: ['patients'] })
       onClose()
       form.reset()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao cadastrar paciente:', error)
       
       let errorMessage = 'Ocorreu um erro ao cadastrar o paciente. Tente novamente.'
       
-      if (error.message) {
+      if (error instanceof Error) {
         errorMessage = error.message
-      } else if (error.code) {
-        switch (error.code) {
+      } else if (typeof error === 'object' && error !== null && 'code' in error) {
+        const dbError = error as { code: string }
+        switch (dbError.code) {
           case '23505': // Unique violation
             errorMessage = 'Já existe um paciente cadastrado com este CPF.'
             break

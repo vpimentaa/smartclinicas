@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 async function auditDatabase() {
   try {
     // Check if patients table exists
-    const { data: patientsTable, error: patientsError } = await supabase
+    const { error: patientsError } = await supabase
       .from('patients')
       .select('*')
       .limit(1)
@@ -15,7 +15,7 @@ async function auditDatabase() {
     }
 
     // Check if accounts table exists
-    const { data: accountsTable, error: accountsError } = await supabase
+    const { error: accountsError } = await supabase
       .from('accounts')
       .select('*')
       .limit(1)
@@ -27,7 +27,7 @@ async function auditDatabase() {
     }
 
     // Check if accounts_users table exists
-    const { data: accountsUsersTable, error: accountsUsersError } = await supabase
+    const { error: accountsUsersError } = await supabase
       .from('accounts_users')
       .select('*')
       .limit(1)
@@ -39,7 +39,7 @@ async function auditDatabase() {
     }
 
     // Check if clinics table exists
-    const { data: clinicsTable, error: clinicsError } = await supabase
+    const { error: clinicsError } = await supabase
       .from('clinics')
       .select('*')
       .limit(1)
@@ -51,7 +51,7 @@ async function auditDatabase() {
     }
 
     // Check if professionals table exists
-    const { data: professionalsTable, error: professionalsError } = await supabase
+    const { error: professionalsError } = await supabase
       .from('professionals')
       .select('*')
       .limit(1)
@@ -63,7 +63,7 @@ async function auditDatabase() {
     }
 
     // Check if employees table exists
-    const { data: employeesTable, error: employeesError } = await supabase
+    const { error: employeesError } = await supabase
       .from('employees')
       .select('*')
       .limit(1)
