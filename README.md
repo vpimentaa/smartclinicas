@@ -1,3 +1,45 @@
+# SmartClínicas
+
+Sistema de gestão para clínicas e consultórios médicos.
+
+## Tecnologias
+
+- Next.js 14
+- TypeScript
+- Tailwind CSS
+- Supabase
+- React Query
+- Radix UI
+
+## Funcionalidades
+
+- Gestão de pacientes
+- Gestão de profissionais
+- Gestão de clínicas
+- Agendamento de consultas
+- Autenticação de usuários
+
+## Configuração do Ambiente
+
+1. Clone o repositório
+2. Instale as dependências:
+   ```bash
+   npm install
+   ```
+3. Configure as variáveis de ambiente:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=sua_url_do_supabase
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_chave_anonima_do_supabase
+   ```
+4. Execute o projeto:
+   ```bash
+   npm run dev
+   ```
+
+## Deploy
+
+O projeto está configurado para deploy automático na Vercel. Qualquer push para a branch `main` irá disparar um novo deploy.
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
