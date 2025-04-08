@@ -5,7 +5,7 @@ import { Dialog } from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { createClinic, createClinicUnit } from '@/lib/supabase'
-import { toast } from 'react-hot-toast'
+import { toast } from '@/components/ui/use-toast'
 
 interface NewClinicModalProps {
   isOpen: boolean
@@ -13,7 +13,7 @@ interface NewClinicModalProps {
 }
 
 export function NewClinicModal({ isOpen, onClose }: NewClinicModalProps) {
-  const { user } = useAuth()
+  const { accountId } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
@@ -47,8 +47,12 @@ export function NewClinicModal({ isOpen, onClose }: NewClinicModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!user) {
-      toast.error('Você precisa estar logado para criar uma clínica')
+    if (!accountId) {
+      toast({
+        title: 'Erro',
+        description: 'Você precisa estar logado para criar uma clínica',
+        variant: 'destructive',
+      })
       return
     }
 
@@ -56,7 +60,7 @@ export function NewClinicModal({ isOpen, onClose }: NewClinicModalProps) {
     try {
       // Criar a clínica
       const clinic = await createClinic({
-        owner_id: user.id,
+        owner_id: accountId,
         name: formData.name,
         cnpj: formData.cnpj,
         email: formData.email,
@@ -74,7 +78,7 @@ export function NewClinicModal({ isOpen, onClose }: NewClinicModalProps) {
       for (const unit of formData.units) {
         await createClinicUnit({
           clinic_id: clinic.id,
-          owner_id: user.id,
+          owner_id: accountId,
           name: unit.name,
           address_street: unit.address.street,
           address_number: unit.address.number,
@@ -86,11 +90,18 @@ export function NewClinicModal({ isOpen, onClose }: NewClinicModalProps) {
         })
       }
 
-      toast.success('Clínica cadastrada com sucesso!')
+      toast({
+        title: 'Sucesso',
+        description: 'Clínica cadastrada com sucesso!',
+      })
       onClose()
     } catch (error) {
       console.error('Erro ao cadastrar clínica:', error)
-      toast.error('Erro ao cadastrar clínica. Tente novamente.')
+      toast({
+        title: 'Erro',
+        description: 'Erro ao cadastrar clínica. Tente novamente.',
+        variant: 'destructive',
+      })
     } finally {
       setIsSubmitting(false)
     }
@@ -128,12 +139,15 @@ export function NewClinicModal({ isOpen, onClose }: NewClinicModalProps) {
     const updatedUnits = [...formData.units]
     if (field.includes('.')) {
       const [parent, child] = field.split('.')
-      updatedUnits[index] = {
-        ...updatedUnits[index],
-        [parent]: {
-          ...updatedUnits[index][parent as keyof typeof updatedUnits[0]],
-          [child]: value,
-        },
+      const unit = updatedUnits[index]
+      if (parent === 'address') {
+        updatedUnits[index] = {
+          ...unit,
+          address: {
+            ...unit.address,
+            [child]: value,
+          },
+        }
       }
     } else {
       updatedUnits[index] = {

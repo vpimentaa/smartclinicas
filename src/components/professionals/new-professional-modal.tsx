@@ -3,80 +3,96 @@
 import { useState } from 'react'
 import { Dialog } from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
-import { useAuth } from '@/contexts/auth-context'
-import { createProfessional, type Professional } from '@/lib/supabase'
-import { toast } from 'react-hot-toast'
+import { createProfessional } from '@/lib/supabase'
+import { useToast } from '@/components/ui/use-toast'
+import { useQueryClient } from '@tanstack/react-query'
 
 interface NewProfessionalModalProps {
   isOpen: boolean
   onClose: () => void
-  clinicId: string
 }
 
-export function NewProfessionalModal({ isOpen, onClose, clinicId }: NewProfessionalModalProps) {
-  const { user } = useAuth()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+export function NewProfessionalModal({ isOpen, onClose }: NewProfessionalModalProps) {
+  const [isLoading, setIsLoading] = useState(false)
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+
   const [formData, setFormData] = useState({
     name: '',
     cpf: '',
-    email: '',
     phone: '',
-    birth_date: '',
+    email: '',
+    birthDate: '',
     gender: '',
     specialty: '',
-    registration_number: '',
-    registration_state: '',
-    address_street: '',
-    address_number: '',
-    address_complement: '',
-    address_neighborhood: '',
-    address_city: '',
-    address_state: '',
-    address_zip_code: '',
+    registrationNumber: '',
+    registrationState: '',
+    address: {
+      street: '',
+      number: '',
+      complement: '',
+      neighborhood: '',
+      city: '',
+      state: '',
+      zipCode: '',
+    },
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!user) {
-      toast.error('Você precisa estar logado para cadastrar um profissional')
-      return
-    }
+    setIsLoading(true)
 
-    setIsSubmitting(true)
     try {
       await createProfessional({
-        clinic_id: clinicId,
-        ...formData,
+        name: formData.name,
+        cpf: formData.cpf,
+        phone: formData.phone,
+        email: formData.email,
+        birth_date: formData.birthDate,
+        gender: formData.gender,
+        specialty: formData.specialty,
+        registration_number: formData.registrationNumber,
+        registration_state: formData.registrationState,
+        address_street: formData.address.street,
+        address_number: formData.address.number,
+        address_complement: formData.address.complement,
+        address_neighborhood: formData.address.neighborhood,
+        address_city: formData.address.city,
+        address_state: formData.address.state,
+        address_zip_code: formData.address.zipCode,
+        clinic_id: 'your-clinic-id', // Replace with actual clinic ID
       })
 
-      toast.success('Profissional cadastrado com sucesso!')
+      toast({
+        title: 'Sucesso',
+        description: 'Profissional cadastrado com sucesso!',
+      })
+
+      queryClient.invalidateQueries({ queryKey: ['professionals'] })
       onClose()
     } catch (error) {
       console.error('Erro ao cadastrar profissional:', error)
-      toast.error('Erro ao cadastrar profissional. Tente novamente.')
+      toast({
+        title: 'Erro',
+        description: 'Ocorreu um erro ao cadastrar o profissional. Tente novamente.',
+        variant: 'destructive',
+      })
     } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleClose = () => {
-    if (!isSubmitting) {
-      onClose()
+      setIsLoading(false)
     }
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <div className="modal-overlay" />
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
       <div className="fixed inset-0 z-10 overflow-y-auto">
         <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-          <div className="modal-content">
+          <div className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl sm:p-6">
             <div className="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
               <button
                 type="button"
                 className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                onClick={handleClose}
-                disabled={isSubmitting}
+                onClick={onClose}
               >
                 <span className="sr-only">Fechar</span>
                 <X className="h-6 w-6" aria-hidden="true" />
@@ -104,9 +120,8 @@ export function NewProfessionalModal({ isOpen, onClose, clinicId }: NewProfessio
                         onChange={(e) =>
                           setFormData({ ...formData, name: e.target.value })
                         }
-                        className="mt-1 block w-full"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         required
-                        disabled={isSubmitting}
                       />
                     </div>
                     <div>
@@ -124,29 +139,8 @@ export function NewProfessionalModal({ isOpen, onClose, clinicId }: NewProfessio
                         onChange={(e) =>
                           setFormData({ ...formData, cpf: e.target.value })
                         }
-                        className="mt-1 block w-full"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         required
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="email"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={(e) =>
-                          setFormData({ ...formData, email: e.target.value })
-                        }
-                        className="mt-1 block w-full"
-                        required
-                        disabled={isSubmitting}
                       />
                     </div>
                     <div>
@@ -164,29 +158,45 @@ export function NewProfessionalModal({ isOpen, onClose, clinicId }: NewProfessio
                         onChange={(e) =>
                           setFormData({ ...formData, phone: e.target.value })
                         }
-                        className="mt-1 block w-full"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         required
-                        disabled={isSubmitting}
                       />
                     </div>
                     <div>
                       <label
-                        htmlFor="birth_date"
+                        htmlFor="email"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={(e) =>
+                          setFormData({ ...formData, email: e.target.value })
+                        }
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="birthDate"
                         className="block text-sm font-medium text-gray-700"
                       >
                         Data de Nascimento
                       </label>
                       <input
                         type="date"
-                        id="birth_date"
-                        name="birth_date"
-                        value={formData.birth_date}
+                        id="birthDate"
+                        name="birthDate"
+                        value={formData.birthDate}
                         onChange={(e) =>
-                          setFormData({ ...formData, birth_date: e.target.value })
+                          setFormData({ ...formData, birthDate: e.target.value })
                         }
-                        className="mt-1 block w-full"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         required
-                        disabled={isSubmitting}
                       />
                     </div>
                     <div>
@@ -203,11 +213,10 @@ export function NewProfessionalModal({ isOpen, onClose, clinicId }: NewProfessio
                         onChange={(e) =>
                           setFormData({ ...formData, gender: e.target.value })
                         }
-                        className="mt-1 block w-full"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         required
-                        disabled={isSubmitting}
                       >
-                        <option value="">Selecione</option>
+                        <option value="">Selecione...</option>
                         <option value="M">Masculino</option>
                         <option value="F">Feminino</option>
                         <option value="O">Outro</option>
@@ -228,195 +237,231 @@ export function NewProfessionalModal({ isOpen, onClose, clinicId }: NewProfessio
                         onChange={(e) =>
                           setFormData({ ...formData, specialty: e.target.value })
                         }
-                        className="mt-1 block w-full"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         required
-                        disabled={isSubmitting}
                       />
                     </div>
                     <div>
                       <label
-                        htmlFor="registration_number"
+                        htmlFor="registrationNumber"
                         className="block text-sm font-medium text-gray-700"
                       >
-                        Número do Registro
+                        CRM/CRO
                       </label>
                       <input
                         type="text"
-                        id="registration_number"
-                        name="registration_number"
-                        value={formData.registration_number}
+                        id="registrationNumber"
+                        name="registrationNumber"
+                        value={formData.registrationNumber}
                         onChange={(e) =>
-                          setFormData({ ...formData, registration_number: e.target.value })
+                          setFormData({
+                            ...formData,
+                            registrationNumber: e.target.value,
+                          })
                         }
-                        className="mt-1 block w-full"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         required
-                        disabled={isSubmitting}
                       />
                     </div>
                     <div>
                       <label
-                        htmlFor="registration_state"
+                        htmlFor="registrationState"
                         className="block text-sm font-medium text-gray-700"
                       >
-                        Estado do Registro
+                        Estado do CRM/CRO
                       </label>
                       <input
                         type="text"
-                        id="registration_state"
-                        name="registration_state"
-                        value={formData.registration_state}
+                        id="registrationState"
+                        name="registrationState"
+                        value={formData.registrationState}
                         onChange={(e) =>
-                          setFormData({ ...formData, registration_state: e.target.value })
+                          setFormData({
+                            ...formData,
+                            registrationState: e.target.value,
+                          })
                         }
-                        className="mt-1 block w-full"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         required
-                        disabled={isSubmitting}
                       />
                     </div>
                   </div>
 
-                  <div className="border-t border-gray-200 pt-4">
-                    <h4 className="text-sm font-medium text-gray-900 mb-4">
-                      Endereço
-                    </h4>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <div className="sm:col-span-2">
+                  <div className="mt-4">
+                    <h4 className="text-sm font-medium text-gray-900">Endereço</h4>
+                    <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
                         <label
-                          htmlFor="address_street"
+                          htmlFor="street"
                           className="block text-sm font-medium text-gray-700"
                         >
                           Rua
                         </label>
                         <input
                           type="text"
-                          id="address_street"
-                          name="address_street"
-                          value={formData.address_street}
+                          id="street"
+                          name="street"
+                          value={formData.address.street}
                           onChange={(e) =>
-                            setFormData({ ...formData, address_street: e.target.value })
+                            setFormData({
+                              ...formData,
+                              address: {
+                                ...formData.address,
+                                street: e.target.value,
+                              },
+                            })
                           }
-                          className="mt-1 block w-full"
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                           required
-                          disabled={isSubmitting}
                         />
                       </div>
                       <div>
                         <label
-                          htmlFor="address_number"
+                          htmlFor="number"
                           className="block text-sm font-medium text-gray-700"
                         >
                           Número
                         </label>
                         <input
                           type="text"
-                          id="address_number"
-                          name="address_number"
-                          value={formData.address_number}
+                          id="number"
+                          name="number"
+                          value={formData.address.number}
                           onChange={(e) =>
-                            setFormData({ ...formData, address_number: e.target.value })
+                            setFormData({
+                              ...formData,
+                              address: {
+                                ...formData.address,
+                                number: e.target.value,
+                              },
+                            })
                           }
-                          className="mt-1 block w-full"
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                           required
-                          disabled={isSubmitting}
                         />
                       </div>
                       <div>
                         <label
-                          htmlFor="address_complement"
+                          htmlFor="complement"
                           className="block text-sm font-medium text-gray-700"
                         >
                           Complemento
                         </label>
                         <input
                           type="text"
-                          id="address_complement"
-                          name="address_complement"
-                          value={formData.address_complement}
+                          id="complement"
+                          name="complement"
+                          value={formData.address.complement}
                           onChange={(e) =>
-                            setFormData({ ...formData, address_complement: e.target.value })
+                            setFormData({
+                              ...formData,
+                              address: {
+                                ...formData.address,
+                                complement: e.target.value,
+                              },
+                            })
                           }
-                          className="mt-1 block w-full"
-                          disabled={isSubmitting}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         />
                       </div>
                       <div>
                         <label
-                          htmlFor="address_neighborhood"
+                          htmlFor="neighborhood"
                           className="block text-sm font-medium text-gray-700"
                         >
                           Bairro
                         </label>
                         <input
                           type="text"
-                          id="address_neighborhood"
-                          name="address_neighborhood"
-                          value={formData.address_neighborhood}
+                          id="neighborhood"
+                          name="neighborhood"
+                          value={formData.address.neighborhood}
                           onChange={(e) =>
-                            setFormData({ ...formData, address_neighborhood: e.target.value })
+                            setFormData({
+                              ...formData,
+                              address: {
+                                ...formData.address,
+                                neighborhood: e.target.value,
+                              },
+                            })
                           }
-                          className="mt-1 block w-full"
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                           required
-                          disabled={isSubmitting}
                         />
                       </div>
                       <div>
                         <label
-                          htmlFor="address_city"
+                          htmlFor="city"
                           className="block text-sm font-medium text-gray-700"
                         >
                           Cidade
                         </label>
                         <input
                           type="text"
-                          id="address_city"
-                          name="address_city"
-                          value={formData.address_city}
+                          id="city"
+                          name="city"
+                          value={formData.address.city}
                           onChange={(e) =>
-                            setFormData({ ...formData, address_city: e.target.value })
+                            setFormData({
+                              ...formData,
+                              address: {
+                                ...formData.address,
+                                city: e.target.value,
+                              },
+                            })
                           }
-                          className="mt-1 block w-full"
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                           required
-                          disabled={isSubmitting}
                         />
                       </div>
                       <div>
                         <label
-                          htmlFor="address_state"
+                          htmlFor="state"
                           className="block text-sm font-medium text-gray-700"
                         >
                           Estado
                         </label>
                         <input
                           type="text"
-                          id="address_state"
-                          name="address_state"
-                          value={formData.address_state}
+                          id="state"
+                          name="state"
+                          value={formData.address.state}
                           onChange={(e) =>
-                            setFormData({ ...formData, address_state: e.target.value })
+                            setFormData({
+                              ...formData,
+                              address: {
+                                ...formData.address,
+                                state: e.target.value,
+                              },
+                            })
                           }
-                          className="mt-1 block w-full"
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                           required
-                          disabled={isSubmitting}
                         />
                       </div>
                       <div>
                         <label
-                          htmlFor="address_zip_code"
+                          htmlFor="zipCode"
                           className="block text-sm font-medium text-gray-700"
                         >
                           CEP
                         </label>
                         <input
                           type="text"
-                          id="address_zip_code"
-                          name="address_zip_code"
-                          value={formData.address_zip_code}
+                          id="zipCode"
+                          name="zipCode"
+                          value={formData.address.zipCode}
                           onChange={(e) =>
-                            setFormData({ ...formData, address_zip_code: e.target.value })
+                            setFormData({
+                              ...formData,
+                              address: {
+                                ...formData.address,
+                                zipCode: e.target.value,
+                              },
+                            })
                           }
-                          className="mt-1 block w-full"
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                           required
-                          disabled={isSubmitting}
                         />
                       </div>
                     </div>
@@ -425,16 +470,15 @@ export function NewProfessionalModal({ isOpen, onClose, clinicId }: NewProfessio
                   <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
                     <button
                       type="submit"
-                      className="w-full sm:w-auto"
-                      disabled={isSubmitting}
+                      disabled={isLoading}
+                      className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:ml-3 sm:w-auto"
                     >
-                      {isSubmitting ? 'Salvando...' : 'Cadastrar'}
+                      {isLoading ? 'Salvando...' : 'Salvar'}
                     </button>
                     <button
                       type="button"
-                      className="btn-secondary mt-3 sm:mt-0 sm:ml-3 w-full sm:w-auto"
-                      onClick={handleClose}
-                      disabled={isSubmitting}
+                      onClick={onClose}
+                      className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
                     >
                       Cancelar
                     </button>

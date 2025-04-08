@@ -4,10 +4,32 @@ import { useState } from 'react'
 import { MainLayout } from '@/components/layout/main-layout'
 import { Plus, Search, Filter } from 'lucide-react'
 import { NewPatientModal } from '@/components/patients/new-patient-modal'
+import { useAuth } from '@/contexts/auth-context'
 
 export default function PacientesPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false)
+  const { accountId, isLoading } = useAuth()
+
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="p-6">
+          <div>Carregando...</div>
+        </div>
+      </MainLayout>
+    )
+  }
+
+  if (!accountId) {
+    return (
+      <MainLayout>
+        <div className="p-6">
+          <div>Você precisa estar logado para acessar esta página.</div>
+        </div>
+      </MainLayout>
+    )
+  }
 
   return (
     <MainLayout>
@@ -94,6 +116,7 @@ export default function PacientesPage() {
       <NewPatientModal
         isOpen={isNewPatientModalOpen}
         onClose={() => setIsNewPatientModalOpen(false)}
+        accountId={accountId}
       />
     </MainLayout>
   )

@@ -1,8 +1,8 @@
 'use client'
 
 import * as React from 'react'
-
-import type {
+import {
+  Toast,
   ToastActionElement,
   ToastProps,
 } from '@/components/ui/toast'
@@ -17,12 +17,12 @@ type ToasterToast = ToastProps & {
   action?: ToastActionElement
 }
 
-const actionTypes = {
-  ADD_TOAST: 'ADD_TOAST',
-  UPDATE_TOAST: 'UPDATE_TOAST',
-  DISMISS_TOAST: 'DISMISS_TOAST',
-  REMOVE_TOAST: 'REMOVE_TOAST',
-} as const
+type ActionType = {
+  ADD_TOAST: 'ADD_TOAST'
+  UPDATE_TOAST: 'UPDATE_TOAST'
+  DISMISS_TOAST: 'DISMISS_TOAST'
+  REMOVE_TOAST: 'REMOVE_TOAST'
+}
 
 let count = 0
 
@@ -30,8 +30,6 @@ function genId() {
   count = (count + 1) % Number.MAX_VALUE
   return count.toString()
 }
-
-type ActionType = typeof actionTypes
 
 type Action =
   | {
@@ -141,7 +139,7 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, 'id'>
 
-function toast({ ...props }: Toast) {
+export function toast({ ...props }: Toast) {
   const id = genId()
 
   const update = (props: ToasterToast) =>
@@ -170,7 +168,7 @@ function toast({ ...props }: Toast) {
   }
 }
 
-function useToast() {
+export function useToast() {
   const [state, setState] = React.useState<State>(memoryState)
 
   React.useEffect(() => {
@@ -188,6 +186,4 @@ function useToast() {
     toast,
     dismiss: (toastId?: string) => dispatch({ type: 'DISMISS_TOAST', toastId }),
   }
-}
-
-export { useToast, toast } 
+} 
