@@ -1,0 +1,44 @@
+# This is a TOML config file.
+# For more information, see https://github.com/toml-lang/toml
+
+# Project name
+project_name = "smartclinicas"
+
+# Project ID
+project_id = "smartclinicas"
+
+# Project URL
+project_url = "https://smartclinicas.supabase.co"
+
+# Project API URL
+api_url = "https://smartclinicas.supabase.co/rest/v1"
+
+# Project API Key
+api_key = "your-api-key-here"
+
+# Database configuration
+[db]
+  host = "db.smartclinicas.supabase.co"
+  port = 5432
+  name = "postgres"
+  user = "postgres"
+  password = "your-db-password-here"
+
+# Auth configuration
+[auth]
+  site_url = "https://smartclinicas.supabase.co"
+  jwt_secret = "your-jwt-secret-here"
+  jwt_expiry = 3600
+  jwt_issuer = "smartclinicas"
+  jwt_audience = "authenticated"
+
+# Storage configuration
+[storage]
+  bucket_name = "smartclinicas"
+  bucket_public = true
+  bucket_private = false
+
+# Functions configuration
+[functions]
+  functions_path = "functions"
+  functions_url = "https://smartclinicas.supabase.co/functions/v1" 
