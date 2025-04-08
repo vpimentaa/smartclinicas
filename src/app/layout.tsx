@@ -1,20 +1,14 @@
 'use client'
 
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { AuthProvider } from "@/contexts/auth-context";
+import { Inter } from 'next/font/google'
+import './globals.css'
+import { AuthProvider } from '@/contexts/auth-context'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from '@/components/ui/toaster'
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ['latin'] })
 
 const queryClient = new QueryClient()
-
-export const metadata: Metadata = {
-  title: "SmartClínicas - Gestão de Consultórios",
-  description: "Sistema de gestão para clínicas e consultórios médicos",
-};
 
 export default function RootLayout({
   children,
@@ -32,5 +26,11 @@ export default function RootLayout({
         </QueryClientProvider>
       </body>
     </html>
-  );
+  )
+}
+
+// Move metadata to a separate file since we're using 'use client'
+export const metadata = {
+  title: 'SmartClínicas',
+  description: 'Sistema de gestão para clínicas médicas',
 }
