@@ -1,11 +1,48 @@
 'use client'
 
 import { useState } from 'react'
-import { Dialog } from '@radix-ui/react-dialog'
-import { X } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
 import { createPatient } from '@/lib/supabase'
 import { useToast } from '@/components/ui/use-toast'
 import { useQueryClient } from '@tanstack/react-query'
+
+const formSchema = z.object({
+  name: z.string().min(1, 'Nome é obrigatório'),
+  cpf: z.string().min(11, 'CPF inválido').max(14, 'CPF inválido'),
+  phone: z.string().min(10, 'Telefone inválido'),
+  email: z.string().email('Email inválido').optional().or(z.literal('')),
+  birthDate: z.string().min(1, 'Data de nascimento é obrigatória'),
+  gender: z.enum(['M', 'F', 'O'], {
+    required_error: 'Selecione o gênero',
+  }),
+  address: z.object({
+    street: z.string().min(1, 'Rua é obrigatória'),
+    number: z.string().min(1, 'Número é obrigatório'),
+    complement: z.string().optional(),
+    neighborhood: z.string().min(1, 'Bairro é obrigatório'),
+    city: z.string().min(1, 'Cidade é obrigatória'),
+    state: z.string().min(2, 'Estado é obrigatório').max(2, 'Use a sigla do estado'),
+    zipCode: z.string().min(8, 'CEP inválido').max(9, 'CEP inválido'),
+  }),
+  medicalHistory: z.string().optional(),
+  allergies: z.string().optional(),
+  medications: z.string().optional(),
+})
+
+type FormData = z.infer<typeof formSchema>
 
 interface NewPatientModalProps {
   isOpen: boolean
@@ -18,51 +55,53 @@ export function NewPatientModal({ isOpen, onClose, accountId }: NewPatientModalP
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
-  const [formData, setFormData] = useState({
-    name: '',
-    cpf: '',
-    phone: '',
-    email: '',
-    birthDate: '',
-    gender: '',
-    address: {
-      street: '',
-      number: '',
-      complement: '',
-      neighborhood: '',
-      city: '',
-      state: '',
-      zipCode: '',
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: '',
+      cpf: '',
+      phone: '',
+      email: '',
+      birthDate: '',
+      gender: 'O',
+      address: {
+        street: '',
+        number: '',
+        complement: '',
+        neighborhood: '',
+        city: '',
+        state: '',
+        zipCode: '',
+      },
+      medicalHistory: '',
+      allergies: '',
+      medications: '',
     },
-    medicalHistory: '',
-    allergies: '',
-    medications: '',
   })
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const onSubmit = async (data: FormData) => {
     setIsLoading(true)
 
     try {
       await createPatient({
-        name: formData.name,
-        cpf: formData.cpf,
-        phone: formData.phone,
-        email: formData.email,
-        birth_date: formData.birthDate,
-        gender: formData.gender,
+        name: data.name,
+        cpf: data.cpf.replace(/\D/g, ''),
+        phone: data.phone.replace(/\D/g, ''),
+        email: data.email || '',
+        birth_date: data.birthDate,
+        gender: data.gender,
         address: {
-          street: formData.address.street,
-          number: formData.address.number,
-          complement: formData.address.complement,
-          neighborhood: formData.address.neighborhood,
-          city: formData.address.city,
-          state: formData.address.state,
-          zip_code: formData.address.zipCode,
+          street: data.address.street,
+          number: data.address.number,
+          complement: data.address.complement || '',
+          neighborhood: data.address.neighborhood,
+          city: data.address.city,
+          state: data.address.state,
+          zip_code: data.address.zipCode.replace(/\D/g, ''),
         },
-        medical_history: formData.medicalHistory,
-        allergies: formData.allergies,
-        medications: formData.medications,
+        medical_history: data.medicalHistory || '',
+        allergies: data.allergies || '',
+        medications: data.medications || '',
         account_id: accountId,
       })
 
@@ -73,6 +112,7 @@ export function NewPatientModal({ isOpen, onClose, accountId }: NewPatientModalP
 
       queryClient.invalidateQueries({ queryKey: ['patients'] })
       onClose()
+      form.reset()
     } catch (error) {
       console.error('Erro ao cadastrar paciente:', error)
       toast({
@@ -87,394 +127,270 @@ export function NewPatientModal({ isOpen, onClose, accountId }: NewPatientModalP
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
-      <div className="fixed inset-0 z-10 overflow-y-auto">
-        <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-          <div className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl sm:p-6">
-            <div className="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
-              <button
-                type="button"
-                className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                onClick={onClose}
-              >
-                <span className="sr-only">Fechar</span>
-                <X className="h-6 w-6" aria-hidden="true" />
-              </button>
-            </div>
-            <div className="sm:flex sm:items-start">
-              <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                <h3 className="text-lg font-semibold leading-6 text-gray-900">
-                  Novo Paciente
-                </h3>
-                <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                      <label
-                        htmlFor="name"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        Nome Completo
-                      </label>
-                      <input
-                        type="text"
-                        id="name"
-                        name="name"
-                        value={formData.name}
-                        onChange={(e) =>
-                          setFormData({ ...formData, name: e.target.value })
-                        }
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="cpf"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        CPF
-                      </label>
-                      <input
-                        type="text"
-                        id="cpf"
-                        name="cpf"
-                        value={formData.cpf}
-                        onChange={(e) =>
-                          setFormData({ ...formData, cpf: e.target.value })
-                        }
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="phone"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        Telefone
-                      </label>
-                      <input
-                        type="tel"
-                        id="phone"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={(e) =>
-                          setFormData({ ...formData, phone: e.target.value })
-                        }
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="email"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={(e) =>
-                          setFormData({ ...formData, email: e.target.value })
-                        }
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="birthDate"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        Data de Nascimento
-                      </label>
-                      <input
-                        type="date"
-                        id="birthDate"
-                        name="birthDate"
-                        value={formData.birthDate}
-                        onChange={(e) =>
-                          setFormData({ ...formData, birthDate: e.target.value })
-                        }
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="gender"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        Sexo
-                      </label>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Novo Paciente</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome Completo</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="cpf"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CPF</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Telefone</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="birthDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data de Nascimento</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="gender"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Gênero</FormLabel>
+                    <FormControl>
                       <select
-                        id="gender"
-                        name="gender"
-                        value={formData.gender}
-                        onChange={(e) =>
-                          setFormData({ ...formData, gender: e.target.value })
-                        }
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        required
+                        {...field}
+                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                       >
-                        <option value="">Selecione</option>
-                        <option value="male">Masculino</option>
-                        <option value="female">Feminino</option>
-                        <option value="other">Outro</option>
+                        <option value="M">Masculino</option>
+                        <option value="F">Feminino</option>
+                        <option value="O">Outro</option>
                       </select>
-                    </div>
-                  </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-                  <div className="border-t border-gray-200 pt-4">
-                    <h4 className="text-sm font-medium text-gray-900 mb-4">
-                      Endereço
-                    </h4>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <div className="sm:col-span-2">
-                        <label
-                          htmlFor="street"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          Rua
-                        </label>
-                        <input
-                          type="text"
-                          id="street"
-                          name="street"
-                          value={formData.address.street}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              address: { ...formData.address, street: e.target.value },
-                            })
-                          }
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="number"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          Número
-                        </label>
-                        <input
-                          type="text"
-                          id="number"
-                          name="number"
-                          value={formData.address.number}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              address: { ...formData.address, number: e.target.value },
-                            })
-                          }
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="complement"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          Complemento
-                        </label>
-                        <input
-                          type="text"
-                          id="complement"
-                          name="complement"
-                          value={formData.address.complement}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              address: { ...formData.address, complement: e.target.value },
-                            })
-                          }
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="neighborhood"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          Bairro
-                        </label>
-                        <input
-                          type="text"
-                          id="neighborhood"
-                          name="neighborhood"
-                          value={formData.address.neighborhood}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              address: { ...formData.address, neighborhood: e.target.value },
-                            })
-                          }
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="city"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          Cidade
-                        </label>
-                        <input
-                          type="text"
-                          id="city"
-                          name="city"
-                          value={formData.address.city}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              address: { ...formData.address, city: e.target.value },
-                            })
-                          }
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="state"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          Estado
-                        </label>
-                        <input
-                          type="text"
-                          id="state"
-                          name="state"
-                          value={formData.address.state}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              address: { ...formData.address, state: e.target.value },
-                            })
-                          }
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="zipCode"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          CEP
-                        </label>
-                        <input
-                          type="text"
-                          id="zipCode"
-                          name="zipCode"
-                          value={formData.address.zipCode}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              address: { ...formData.address, zipCode: e.target.value },
-                            })
-                          }
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-gray-200 pt-4">
-                    <h4 className="text-sm font-medium text-gray-900 mb-4">
-                      Informações Médicas
-                    </h4>
-                    <div className="grid grid-cols-1 gap-4">
-                      <div>
-                        <label
-                          htmlFor="medicalHistory"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          Histórico Médico
-                        </label>
-                        <textarea
-                          id="medicalHistory"
-                          name="medicalHistory"
-                          rows={3}
-                          value={formData.medicalHistory}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              medicalHistory: e.target.value,
-                            })
-                          }
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="allergies"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          Alergias
-                        </label>
-                        <textarea
-                          id="allergies"
-                          name="allergies"
-                          rows={2}
-                          value={formData.allergies}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              allergies: e.target.value,
-                            })
-                          }
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="medications"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          Medicamentos
-                        </label>
-                        <textarea
-                          id="medications"
-                          name="medications"
-                          rows={2}
-                          value={formData.medications}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              medications: e.target.value,
-                            })
-                          }
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isLoading ? 'Salvando...' : 'Salvar'}
-                    </button>
-                    <button
-                      type="button"
-                      className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0"
-                      onClick={onClose}
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </form>
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium text-gray-900">Endereço</h4>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="address.street"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Rua</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="address.number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Número</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="address.complement"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Complemento</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="address.neighborhood"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bairro</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="address.city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cidade</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="address.state"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Estado</FormLabel>
+                      <FormControl>
+                        <Input maxLength={2} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="address.zipCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CEP</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </div>
-          </div>
-        </div>
-      </div>
+
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium text-gray-900">Informações Médicas</h4>
+              <div className="grid grid-cols-1 gap-4">
+                <FormField
+                  control={form.control}
+                  name="medicalHistory"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Histórico Médico</FormLabel>
+                      <FormControl>
+                        <textarea
+                          {...field}
+                          className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                          rows={3}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="allergies"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Alergias</FormLabel>
+                      <FormControl>
+                        <textarea
+                          {...field}
+                          className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                          rows={2}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="medications"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Medicamentos</FormLabel>
+                      <FormControl>
+                        <textarea
+                          {...field}
+                          className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                          rows={2}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={isLoading}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" variant="primary" disabled={isLoading}>
+                {isLoading ? 'Salvando...' : 'Salvar'}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
     </Dialog>
   )
 } 
