@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Dialog } from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from '@/hooks/use-auth'
 import { createClinic, createClinicUnit } from '@/lib/supabase'
 import { toast } from '@/components/ui/use-toast'
 
@@ -13,7 +13,7 @@ interface NewClinicModalProps {
 }
 
 export function NewClinicModal({ isOpen, onClose }: NewClinicModalProps) {
-  const { accountId } = useAuth()
+  const { user } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
@@ -47,7 +47,7 @@ export function NewClinicModal({ isOpen, onClose }: NewClinicModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!accountId) {
+    if (!user) {
       toast({
         title: 'Erro',
         description: 'Você precisa estar logado para criar uma clínica',
@@ -60,7 +60,7 @@ export function NewClinicModal({ isOpen, onClose }: NewClinicModalProps) {
     try {
       // Criar a clínica
       const clinic = await createClinic({
-        owner_id: accountId,
+        owner_id: user.id,
         name: formData.name,
         cnpj: formData.cnpj,
         email: formData.email,
@@ -78,7 +78,7 @@ export function NewClinicModal({ isOpen, onClose }: NewClinicModalProps) {
       for (const unit of formData.units) {
         await createClinicUnit({
           clinic_id: clinic.id,
-          owner_id: accountId,
+          owner_id: user.id,
           name: unit.name,
           address_street: unit.address.street,
           address_number: unit.address.number,

@@ -1,75 +1,135 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, ReactNode, useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
+interface User {
+  id: string
+  email: string
+  clinicName: string
+  role: 'owner' | 'admin' | 'employee'
+}
+
 interface AuthContextType {
-  accountId: string | null
-  isLoading: boolean
-  signUp: (email: string, password: string) => Promise<{ error: Error | null }>
+  user: User | null
+  signUp: (email: string, password: string, clinicName: string) => Promise<{ error: Error | null }>
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
 }
 
-const AuthContext = createContext<AuthContextType>({
-  accountId: null,
-  isLoading: true,
-  signUp: async () => ({ error: new Error('Not implemented') }),
-  signOut: async () => { throw new Error('Not implemented') },
-})
+export const AuthContext = createContext<AuthContextType | null>(null)
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [accountId, setAccountId] = useState<string | null>(null)
+interface AuthProviderProps {
+  children: ReactNode
+}
+
+export function AuthProvider({ children }: AuthProviderProps) {
+  const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  const signUp = async (email: string, password: string) => {
+  useEffect(() => {
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email!,
+          clinicName: session.user.user_metadata.clinic_name,
+          role: session.user.user_metadata.role || 'owner',
+        })
+      }
+      setIsLoading(false)
+    })
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email!,
+          clinicName: session.user.user_metadata.clinic_name,
+          role: session.user.user_metadata.role || 'owner',
+        })
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  if (isLoading) {
+    return null // or a loading spinner
+  }
+
+  async function signUp(email: string, password: string, clinicName: string) {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            clinic_name: clinicName,
+          },
+        },
       })
-      return { error }
+
+      if (error) throw error
+
+      if (data.user) {
+        setUser({
+          id: data.user.id,
+          email: data.user.email!,
+          clinicName: data.user.user_metadata.clinic_name,
+          role: data.user.user_metadata.role || 'owner',
+        })
+      }
+
+      return { error: null }
     } catch (error) {
       return { error: error as Error }
     }
   }
 
-  const signOut = async () => {
-    await supabase.auth.signOut()
-    setAccountId(null)
+  async function signIn(email: string, password: string) {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (error) throw error
+
+      if (data.user) {
+        setUser({
+          id: data.user.id,
+          email: data.user.email!,
+          clinicName: data.user.user_metadata.clinic_name,
+          role: data.user.user_metadata.role || 'owner',
+        })
+      }
+
+      return { error: null }
+    } catch (error) {
+      return { error: error as Error }
+    }
   }
 
-  useEffect(() => {
-    const getSession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession()
-        if (error) throw error
-        setAccountId(session?.user?.id || null)
-      } catch (error) {
-        console.error('Error getting session:', error)
-        setAccountId(null)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    getSession()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAccountId(session?.user?.id || null)
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [])
+  async function signOut() {
+    await supabase.auth.signOut()
+    setUser(null)
+  }
 
   return (
-    <AuthContext.Provider value={{ accountId, isLoading, signUp, signOut }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        signUp,
+        signIn,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )
-}
-
-export function useAuth() {
-  return useContext(AuthContext)
 } 

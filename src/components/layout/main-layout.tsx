@@ -2,37 +2,31 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from '@/hooks/use-auth'
 import { Header } from './header'
+import { Sidebar } from './sidebar'
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
-  const { accountId, isLoading } = useAuth()
   const router = useRouter()
+  const { user } = useAuth()
 
   useEffect(() => {
-    if (!isLoading && !accountId) {
+    if (!user) {
       router.push('/login')
     }
-  }, [accountId, isLoading, router])
+  }, [user, router])
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>
-    )
-  }
-
-  if (!accountId) {
+  if (!user) {
     return null
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <Header />
-      <main className="py-10">
-        <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">{children}</div>
-      </main>
+      <div className="flex">
+        <Sidebar />
+        <main className="flex-1 p-6">{children}</main>
+      </div>
     </div>
   )
 } 

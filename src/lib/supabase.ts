@@ -30,6 +30,31 @@ export type Clinic = {
   updated_at: string
 }
 
+export type UserRole = 'owner' | 'admin' | 'employee'
+
+export type Employee = {
+  id: string
+  clinic_id: string
+  user_id: string
+  name: string
+  email: string
+  role: UserRole
+  permissions: {
+    can_create_appointments: boolean
+    can_edit_appointments: boolean
+    can_delete_appointments: boolean
+    can_view_financial: boolean
+    can_create_financial_entries: boolean
+    can_edit_financial_entries: boolean
+    can_delete_financial_entries: boolean
+    can_manage_patients: boolean
+    can_manage_professionals: boolean
+    can_manage_employees: boolean
+  }
+  created_at: string
+  updated_at: string
+}
+
 export type ClinicUnit = {
   id: string
   clinic_id: string
@@ -265,4 +290,59 @@ export async function createPatient(patientData: {
   }
 
   return data
+}
+
+// Helper functions for employees
+export const getEmployees = async (clinicId: string) => {
+  const { data, error } = await supabase
+    .from('employees')
+    .select('*')
+    .eq('clinic_id', clinicId)
+    .order('name')
+
+  if (error) throw error
+  return data as Employee[]
+}
+
+export const getEmployeeById = async (id: string) => {
+  const { data, error } = await supabase
+    .from('employees')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error) throw error
+  return data as Employee
+}
+
+export const createEmployee = async (employee: Omit<Employee, 'id' | 'created_at' | 'updated_at'>) => {
+  const { data, error } = await supabase
+    .from('employees')
+    .insert([employee])
+    .select()
+    .single()
+
+  if (error) throw error
+  return data as Employee
+}
+
+export const updateEmployee = async (id: string, employee: Partial<Employee>) => {
+  const { data, error } = await supabase
+    .from('employees')
+    .update(employee)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data as Employee
+}
+
+export const deleteEmployee = async (id: string) => {
+  const { error } = await supabase
+    .from('employees')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
 } 
