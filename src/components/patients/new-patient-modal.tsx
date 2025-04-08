@@ -83,7 +83,7 @@ export function NewPatientModal({ isOpen, onClose, accountId }: NewPatientModalP
     setIsLoading(true)
 
     try {
-      await createPatient({
+      const patientData = {
         name: data.name,
         cpf: data.cpf.replace(/\D/g, ''),
         phone: data.phone.replace(/\D/g, ''),
@@ -103,7 +103,12 @@ export function NewPatientModal({ isOpen, onClose, accountId }: NewPatientModalP
         allergies: data.allergies || '',
         medications: data.medications || '',
         account_id: accountId,
-      })
+      }
+
+      console.log('Submitting patient data:', patientData)
+
+      const result = await createPatient(patientData)
+      console.log('Patient created successfully:', result)
 
       toast({
         title: 'Sucesso',
@@ -113,11 +118,30 @@ export function NewPatientModal({ isOpen, onClose, accountId }: NewPatientModalP
       queryClient.invalidateQueries({ queryKey: ['patients'] })
       onClose()
       form.reset()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao cadastrar paciente:', error)
+      
+      let errorMessage = 'Ocorreu um erro ao cadastrar o paciente. Tente novamente.'
+      
+      if (error.message) {
+        errorMessage = error.message
+      } else if (error.code) {
+        switch (error.code) {
+          case '23505': // Unique violation
+            errorMessage = 'Já existe um paciente cadastrado com este CPF.'
+            break
+          case '23514': // Check violation
+            errorMessage = 'Dados inválidos. Verifique os campos e tente novamente.'
+            break
+          case '23503': // Foreign key violation
+            errorMessage = 'Erro de referência. Verifique os dados e tente novamente.'
+            break
+        }
+      }
+
       toast({
         title: 'Erro',
-        description: 'Ocorreu um erro ao cadastrar o paciente. Tente novamente.',
+        description: errorMessage,
         variant: 'destructive',
       })
     } finally {

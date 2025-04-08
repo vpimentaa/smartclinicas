@@ -279,17 +279,29 @@ export async function createPatient(patientData: {
   medications: string
   account_id: string
 }) {
-  const { data, error } = await supabase
-    .from('patients')
-    .insert([patientData])
-    .select()
-    .single()
+  try {
+    console.log('Creating patient with data:', patientData)
+    
+    const { data, error } = await supabase
+      .from('patients')
+      .insert([{
+        ...patientData,
+        address: patientData.address as any // Cast to any to allow JSONB insertion
+      }])
+      .select()
+      .single()
 
-  if (error) {
+    if (error) {
+      console.error('Supabase error:', error)
+      throw error
+    }
+
+    console.log('Patient created successfully:', data)
+    return data
+  } catch (error: any) {
+    console.error('Error in createPatient:', error)
     throw error
   }
-
-  return data
 }
 
 // Helper functions for employees
