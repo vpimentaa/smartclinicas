@@ -70,6 +70,11 @@ export default function EmployeesPage() {
           ...formData,
           clinic_id: user.id,
           user_id: '', // Será preenchido após o convite ser aceito
+          account_id: user.id,
+          department: null,
+          hire_date: new Date().toISOString(),
+          termination_date: null,
+          salary: null
         })
         toast({
           title: 'Sucesso',

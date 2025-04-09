@@ -60,25 +60,17 @@ export function NewClinicModal({ isOpen, onClose }: NewClinicModalProps) {
     try {
       // Criar a clínica
       const clinic = await createClinic({
-        owner_id: user.id,
+        account_id: user.id,
         name: formData.name,
         cnpj: formData.cnpj,
         email: formData.email,
-        phone: formData.phone,
-        address_street: formData.address.street,
-        address_number: formData.address.number,
-        address_complement: formData.address.complement,
-        address_neighborhood: formData.address.neighborhood,
-        address_city: formData.address.city,
-        address_state: formData.address.state,
-        address_zip_code: formData.address.zipCode,
+        phone: formData.phone
       })
 
       // Criar as unidades
       for (const unit of formData.units) {
         await createClinicUnit({
           clinic_id: clinic.id,
-          owner_id: user.id,
           name: unit.name,
           address_street: unit.address.street,
           address_number: unit.address.number,

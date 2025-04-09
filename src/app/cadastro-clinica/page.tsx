@@ -106,7 +106,7 @@ export default function CadastroClinicaPage() {
                             {clinic.name}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {clinic.address_city}, {clinic.address_state}
+                            {clinic.email}
                           </div>
                         </div>
                       </div>

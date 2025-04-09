@@ -6,6 +6,7 @@ import { X } from 'lucide-react'
 import { createProfessional } from '@/lib/supabase'
 import { useToast } from '@/components/ui/use-toast'
 import { useQueryClient } from '@tanstack/react-query'
+import { useAuth } from '@/hooks/use-auth'
 
 interface NewProfessionalModalProps {
   isOpen: boolean
@@ -16,6 +17,7 @@ export function NewProfessionalModal({ isOpen, onClose }: NewProfessionalModalPr
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
   const queryClient = useQueryClient()
+  const { user } = useAuth()
 
   const [formData, setFormData] = useState({
     name: '',
@@ -23,7 +25,7 @@ export function NewProfessionalModal({ isOpen, onClose }: NewProfessionalModalPr
     phone: '',
     email: '',
     birthDate: '',
-    gender: '',
+    gender: 'M' as 'M' | 'F' | 'O' | null,
     specialty: '',
     registrationNumber: '',
     registrationState: '',
@@ -40,6 +42,15 @@ export function NewProfessionalModal({ isOpen, onClose }: NewProfessionalModalPr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!user) {
+      toast({
+        title: 'Erro',
+        description: 'Você precisa estar logado para cadastrar um profissional.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     setIsLoading(true)
 
     try {
@@ -53,14 +64,7 @@ export function NewProfessionalModal({ isOpen, onClose }: NewProfessionalModalPr
         specialty: formData.specialty,
         registration_number: formData.registrationNumber,
         registration_state: formData.registrationState,
-        address_street: formData.address.street,
-        address_number: formData.address.number,
-        address_complement: formData.address.complement,
-        address_neighborhood: formData.address.neighborhood,
-        address_city: formData.address.city,
-        address_state: formData.address.state,
-        address_zip_code: formData.address.zipCode,
-        clinic_id: 'your-clinic-id', // Replace with actual clinic ID
+        account_id: user.id,
       })
 
       toast({
@@ -209,14 +213,16 @@ export function NewProfessionalModal({ isOpen, onClose }: NewProfessionalModalPr
                       <select
                         id="gender"
                         name="gender"
-                        value={formData.gender}
+                        value={formData.gender || ''}
                         onChange={(e) =>
-                          setFormData({ ...formData, gender: e.target.value })
+                          setFormData({
+                            ...formData,
+                            gender: e.target.value as 'M' | 'F' | 'O' | null
+                          })
                         }
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         required
                       >
-                        <option value="">Selecione...</option>
                         <option value="M">Masculino</option>
                         <option value="F">Feminino</option>
                         <option value="O">Outro</option>

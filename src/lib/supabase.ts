@@ -8,7 +8,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Helper function to handle errors
-export const handleSupabaseError = (error: any) => {
+export const handleSupabaseError = (error: Error | { message: string }) => {
   console.error('Supabase error:', error)
   throw new Error(error.message)
 }
@@ -142,29 +142,20 @@ export type Document = {
   updated_at: string
 }
 
-export type Employee = {
-  id: string
-  account_id: string
-  user_id: string
-  role: string
-  department: string | null
-  hire_date: string
-  termination_date: string | null
-  salary: number | null
-  created_at: string
-  updated_at: string
-}
-
-// Types for our database tables
 export type UserRole = 'owner' | 'admin' | 'employee'
 
 export type Employee = {
   id: string
+  account_id: string
   clinic_id: string
   user_id: string
   name: string
   email: string
   role: UserRole
+  department: string | null
+  hire_date: string
+  termination_date: string | null
+  salary: number | null
   permissions: {
     can_create_appointments: boolean
     can_edit_appointments: boolean
