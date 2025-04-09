@@ -1,6 +1,114 @@
 # SmartClínicas
 
-Sistema de gestão para clínicas e consultórios médicos.
+A medical clinic management system built with Next.js and Supabase.
+
+## Features
+
+- User authentication and authorization
+- Patient management
+- Professional management
+- Clinic management
+- Appointment scheduling
+- Medical records
+- Financial transactions
+- Document management
+
+## Tech Stack
+
+- Next.js 14
+- TypeScript
+- Supabase
+- Tailwind CSS
+- Vercel (Deployment)
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- npm or yarn
+- Supabase account
+- Vercel account
+
+### Local Development
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/smartclinicas.git
+cd smartclinicas
+```
+
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Create a `.env.local` file with your Supabase credentials:
+```
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
+
+4. Run the development server:
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+### Deployment
+
+#### Supabase
+
+1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
+2. Create a new project
+3. Run the SQL migrations from `supabase/migrations/20240409000000_initial_schema.sql` in the SQL Editor
+4. Get your project URL and anon key from Project Settings -> API
+
+#### Vercel
+
+1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
+2. Click "New Project"
+3. Import your GitHub repository
+4. Add the following environment variables:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+5. Deploy
+
+## Database Schema
+
+The database consists of the following main tables:
+
+- `accounts`: Organization accounts
+- `users`: User profiles
+- `accounts_users`: User-account relationships
+- `patients`: Patient information
+- `professionals`: Healthcare professionals
+- `clinics`: Clinic information
+- `clinic_units`: Clinic branch locations
+- `appointments`: Scheduling system
+- `medical_records`: Patient medical history
+- `financial_transactions`: Payment and billing
+- `documents`: Patient documents
+- `employees`: Staff management
+
+## Security
+
+All tables have Row Level Security (RLS) enabled with appropriate policies to ensure data access control. The main access control is based on the `has_account_access` function, which checks if a user has access to a specific account.
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Tecnologias
 
@@ -102,8 +210,8 @@ docker-compose up -d
 3. Configure your environment variables:
 Create a `.env.local` file in the root directory with:
 ```
-NEXT_PUBLIC_SUPABASE_URL=http://localhost:5432
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_SUPABASE_URL=https://fevakyzmqnjxxdnoxcee.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZldmFreXptcW5qeHhkbm94Y2VlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg1NDA4NzIsImV4cCI6MjA1NDExNjg3Mn0.J49eK4SjW69NPv_ULMc_-g2jzi1uW9nXTUlIawRS3j8
 ```
 
 ### Database Structure
