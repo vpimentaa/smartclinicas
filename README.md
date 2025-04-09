@@ -76,3 +76,64 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Database Setup
+
+The project uses Supabase as the database backend. For local development, you need to run Supabase using Docker.
+
+### Prerequisites
+
+- Docker and Docker Compose installed
+- Node.js and npm installed
+
+### Local Development Setup
+
+1. Start the Supabase services:
+```bash
+docker-compose up -d
+```
+
+2. Access the Supabase Studio:
+- Open http://localhost:3000 in your browser
+- Use the following credentials:
+  - Email: postgres
+  - Password: postgres
+
+3. Configure your environment variables:
+Create a `.env.local` file in the root directory with:
+```
+NEXT_PUBLIC_SUPABASE_URL=http://localhost:5432
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+### Database Structure
+
+The database consists of the following main tables:
+
+- `accounts`: Organization accounts
+- `users`: User profiles
+- `accounts_users`: User-account relationships
+- `patients`: Patient information
+- `professionals`: Healthcare professionals
+- `clinics`: Clinic information
+- `clinic_units`: Clinic branch locations
+- `appointments`: Scheduling system
+- `medical_records`: Patient medical history
+- `financial_transactions`: Payment and billing
+- `documents`: Patient documents
+- `employees`: Staff management
+
+### Row Level Security
+
+All tables have Row Level Security (RLS) enabled with appropriate policies to ensure data access control. The main access control is based on the `has_account_access` function, which checks if a user has access to a specific account.
+
+### Migrations
+
+Database migrations are stored in the `supabase/migrations` directory. To apply new migrations:
+
+1. Create a new migration file with a timestamp prefix
+2. Add your SQL changes
+3. Restart the Supabase container:
+```bash
+docker-compose restart supabase
+```

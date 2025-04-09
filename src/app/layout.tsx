@@ -1,10 +1,12 @@
+import type { Metadata } from 'next';
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { ClientLayout } from '@/components/layout/client-layout'
+import { SupabaseProvider } from '@/contexts/SupabaseContext'
 
 const inter = Inter({ subsets: ['latin'] })
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'SmartClínicas',
   description: 'Sistema de gestão para clínicas médicas',
   icons: {
@@ -20,7 +22,9 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={inter.className}>
-        <ClientLayout>{children}</ClientLayout>
+        <SupabaseProvider>
+          <ClientLayout>{children}</ClientLayout>
+        </SupabaseProvider>
       </body>
     </html>
   )

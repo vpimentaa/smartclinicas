@@ -2,34 +2,160 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
-}
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// Types for our database tables
-export type Clinic = {
+// Helper function to handle errors
+export const handleSupabaseError = (error: any) => {
+  console.error('Supabase error:', error)
+  throw new Error(error.message)
+}
+
+// Type definitions for our tables
+export type Account = {
   id: string
-  owner_id: string
   name: string
-  cnpj: string
   email: string
-  phone: string
-  address_street: string
-  address_number: string
-  address_complement: string | null
-  address_neighborhood: string
-  address_city: string
-  address_state: string
-  address_zip_code: string
   created_at: string
   updated_at: string
 }
 
+export type User = {
+  id: string
+  email: string
+  full_name: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type Patient = {
+  id: string
+  account_id: string
+  name: string
+  cpf: string
+  phone: string | null
+  email: string | null
+  birth_date: string | null
+  gender: 'M' | 'F' | 'O' | null
+  medical_history: string | null
+  allergies: string | null
+  medications: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type Professional = {
+  id: string
+  account_id: string
+  name: string
+  cpf: string
+  email: string | null
+  phone: string | null
+  birth_date: string | null
+  gender: 'M' | 'F' | 'O' | null
+  specialty: string | null
+  registration_number: string | null
+  registration_state: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type Clinic = {
+  id: string
+  account_id: string
+  name: string
+  cnpj: string
+  email: string | null
+  phone: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type ClinicUnit = {
+  id: string
+  clinic_id: string
+  name: string
+  address_street: string | null
+  address_number: string | null
+  address_complement: string | null
+  address_neighborhood: string | null
+  address_city: string | null
+  address_state: string | null
+  address_zip_code: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type Appointment = {
+  id: string
+  account_id: string
+  patient_id: string
+  professional_id: string
+  clinic_unit_id: string
+  start_time: string
+  end_time: string
+  status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'no_show'
+  type: string
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type MedicalRecord = {
+  id: string
+  account_id: string
+  patient_id: string
+  professional_id: string
+  appointment_id: string | null
+  diagnosis: string | null
+  prescription: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type FinancialTransaction = {
+  id: string
+  account_id: string
+  patient_id: string
+  appointment_id: string | null
+  amount: number
+  type: 'payment' | 'refund'
+  status: 'pending' | 'completed' | 'failed' | 'refunded'
+  payment_method: string
+  transaction_date: string
+  created_at: string
+  updated_at: string
+}
+
+export type Document = {
+  id: string
+  account_id: string
+  patient_id: string
+  name: string
+  type: string
+  file_path: string
+  uploaded_by: string
+  created_at: string
+  updated_at: string
+}
+
+export type Employee = {
+  id: string
+  account_id: string
+  user_id: string
+  role: string
+  department: string | null
+  hire_date: string
+  termination_date: string | null
+  salary: number | null
+  created_at: string
+  updated_at: string
+}
+
+// Types for our database tables
 export type UserRole = 'owner' | 'admin' | 'employee'
 
 export type Employee = {
@@ -55,45 +181,6 @@ export type Employee = {
   updated_at: string
 }
 
-export type ClinicUnit = {
-  id: string
-  clinic_id: string
-  owner_id: string
-  name: string
-  address_street: string
-  address_number: string
-  address_complement: string | null
-  address_neighborhood: string
-  address_city: string
-  address_state: string
-  address_zip_code: string
-  created_at: string
-  updated_at: string
-}
-
-export type Professional = {
-  id: string
-  clinic_id: string
-  name: string
-  cpf: string
-  email: string
-  phone: string
-  birth_date: string
-  gender: string
-  specialty: string
-  registration_number: string
-  registration_state: string
-  address_street: string
-  address_number: string
-  address_complement: string | null
-  address_neighborhood: string
-  address_city: string
-  address_state: string
-  address_zip_code: string
-  created_at: string
-  updated_at: string
-}
-
 export type Address = {
   street: string
   number: string
@@ -111,7 +198,6 @@ export type PatientData = {
   email: string
   birth_date: string
   gender: string
-  address: Address
   medical_history: string
   allergies: string
   medications: string
@@ -289,8 +375,16 @@ export async function createPatient(patientData: PatientData) {
     const { data, error } = await supabase
       .from('patients')
       .insert([{
-        ...patientData,
-        address: patientData.address
+        name: patientData.name,
+        cpf: patientData.cpf,
+        phone: patientData.phone,
+        email: patientData.email,
+        birth_date: patientData.birth_date,
+        gender: patientData.gender,
+        medical_history: patientData.medical_history,
+        allergies: patientData.allergies,
+        medications: patientData.medications,
+        account_id: patientData.account_id
       }])
       .select()
       .single()
@@ -357,6 +451,49 @@ export const updateEmployee = async (id: string, employee: Partial<Employee>) =>
 export const deleteEmployee = async (id: string) => {
   const { error } = await supabase
     .from('employees')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
+}
+
+export const getPatients = async (accountId: string) => {
+  const { data, error } = await supabase
+    .from('patients')
+    .select('*')
+    .eq('account_id', accountId)
+    .order('name')
+
+  if (error) throw error
+  return data as Patient[]
+}
+
+export const getPatientById = async (id: string) => {
+  const { data, error } = await supabase
+    .from('patients')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error) throw error
+  return data as Patient
+}
+
+export const updatePatient = async (id: string, patient: Partial<Patient>) => {
+  const { data, error } = await supabase
+    .from('patients')
+    .update(patient)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data as Patient
+}
+
+export const deletePatient = async (id: string) => {
+  const { error } = await supabase
+    .from('patients')
     .delete()
     .eq('id', id)
 

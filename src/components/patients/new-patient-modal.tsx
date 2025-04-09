@@ -28,15 +28,6 @@ const formSchema = z.object({
   gender: z.enum(['M', 'F', 'O'], {
     required_error: 'Selecione o gênero',
   }),
-  address: z.object({
-    street: z.string().min(1, 'Rua é obrigatória'),
-    number: z.string().min(1, 'Número é obrigatório'),
-    complement: z.string().optional(),
-    neighborhood: z.string().min(1, 'Bairro é obrigatório'),
-    city: z.string().min(1, 'Cidade é obrigatória'),
-    state: z.string().min(2, 'Estado é obrigatório').max(2, 'Use a sigla do estado'),
-    zipCode: z.string().min(8, 'CEP inválido').max(9, 'CEP inválido'),
-  }),
   medicalHistory: z.string().optional(),
   allergies: z.string().optional(),
   medications: z.string().optional(),
@@ -64,15 +55,6 @@ export function NewPatientModal({ isOpen, onClose, accountId }: NewPatientModalP
       email: '',
       birthDate: '',
       gender: 'O',
-      address: {
-        street: '',
-        number: '',
-        complement: '',
-        neighborhood: '',
-        city: '',
-        state: '',
-        zipCode: '',
-      },
       medicalHistory: '',
       allergies: '',
       medications: '',
@@ -90,15 +72,6 @@ export function NewPatientModal({ isOpen, onClose, accountId }: NewPatientModalP
         email: data.email || '',
         birth_date: data.birthDate,
         gender: data.gender,
-        address: {
-          street: data.address.street,
-          number: data.address.number,
-          complement: data.address.complement || '',
-          neighborhood: data.address.neighborhood,
-          city: data.address.city,
-          state: data.address.state,
-          zip_code: data.address.zipCode.replace(/\D/g, ''),
-        },
         medical_history: data.medicalHistory || '',
         allergies: data.allergies || '',
         medications: data.medications || '',
@@ -244,103 +217,6 @@ export function NewPatientModal({ isOpen, onClose, accountId }: NewPatientModalP
                   </FormItem>
                 )}
               />
-            </div>
-
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium text-gray-900">Endereço</h4>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="address.street"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Rua</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="address.number"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Número</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="address.complement"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Complemento</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="address.neighborhood"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bairro</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="address.city"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cidade</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="address.state"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Estado</FormLabel>
-                      <FormControl>
-                        <Input maxLength={2} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="address.zipCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>CEP</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
             </div>
 
             <div className="space-y-4">
