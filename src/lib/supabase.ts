@@ -2,8 +2,12 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables')
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
@@ -195,11 +199,31 @@ export type PatientData = {
   account_id: string
 }
 
+// Helper function to get current account_id
+export const getCurrentAccountId = async () => {
+  const { data: { session }, error } = await supabase.auth.getSession()
+  if (error) throw error
+  if (!session?.user) throw new Error('No user session found')
+
+  const { data, error: accountError } = await supabase
+    .from('accounts_users')
+    .select('account_id')
+    .eq('user_id', session.user.id)
+    .single()
+
+  if (accountError) throw accountError
+  if (!data?.account_id) throw new Error('No account found for user')
+
+  return data.account_id
+}
+
 // Helper functions for clinics
 export const getClinics = async () => {
+  const account_id = await getCurrentAccountId()
   const { data, error } = await supabase
     .from('clinics')
     .select('*')
+    .eq('account_id', account_id)
     .order('name')
 
   if (error) throw error
@@ -207,10 +231,12 @@ export const getClinics = async () => {
 }
 
 export const getClinicById = async (id: string) => {
+  const account_id = await getCurrentAccountId()
   const { data, error } = await supabase
     .from('clinics')
     .select('*')
     .eq('id', id)
+    .eq('account_id', account_id)
     .single()
 
   if (error) throw error
@@ -218,9 +244,10 @@ export const getClinicById = async (id: string) => {
 }
 
 export const createClinic = async (clinic: Omit<Clinic, 'id' | 'created_at' | 'updated_at'>) => {
+  const account_id = await getCurrentAccountId()
   const { data, error } = await supabase
     .from('clinics')
-    .insert([clinic])
+    .insert([{ ...clinic, account_id }])
     .select()
     .single()
 
@@ -229,10 +256,12 @@ export const createClinic = async (clinic: Omit<Clinic, 'id' | 'created_at' | 'u
 }
 
 export const updateClinic = async (id: string, clinic: Partial<Clinic>) => {
+  const account_id = await getCurrentAccountId()
   const { data, error } = await supabase
     .from('clinics')
     .update(clinic)
     .eq('id', id)
+    .eq('account_id', account_id)
     .select()
     .single()
 
@@ -241,10 +270,12 @@ export const updateClinic = async (id: string, clinic: Partial<Clinic>) => {
 }
 
 export const deleteClinic = async (id: string) => {
+  const account_id = await getCurrentAccountId()
   const { error } = await supabase
     .from('clinics')
     .delete()
     .eq('id', id)
+    .eq('account_id', account_id)
 
   if (error) throw error
 }
