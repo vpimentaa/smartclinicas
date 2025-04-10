@@ -1,8 +1,10 @@
+'use client'
+
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { SupabaseProvider } from '@/contexts/SupabaseContext'
-import { TopMenu } from '@/components/layout/TopMenu'
+import { AuthProvider } from '@/contexts/AuthContext'
+import { Toaster } from 'react-hot-toast'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -22,16 +24,10 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={inter.className}>
-        <SupabaseProvider>
-          <div className="flex h-screen">
-            <div className="flex-1 flex flex-col">
-              <TopMenu />
-              <main className="flex-1 overflow-y-auto p-4">
-                {children}
-              </main>
-            </div>
-          </div>
-        </SupabaseProvider>
+        <AuthProvider>
+          {children}
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   )
