@@ -17,7 +17,7 @@ type SupabaseContextType = {
   createAccount: (name: string, email: string) => Promise<void>;
 };
 
-const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined);
+export const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined);
 
 export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -92,16 +92,84 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, name: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: name,
+    try {
+      console.log('Starting signup process...');
+      
+      // Step 1: Sign up with Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name,
+          },
         },
-      },
-    });
-    if (error) throw error;
+      });
+
+      if (error) {
+        console.error('Auth signup error:', error);
+        throw error;
+      }
+
+      if (!data.user) {
+        console.error('No user data returned from signup');
+        throw new Error('No user data returned from signup');
+      }
+
+      console.log('Auth signup successful, creating user profile...');
+
+      // Step 2: Create user profile
+      const { error: profileError } = await supabase
+        .from('users')
+        .insert({
+          id: data.user.id,
+          email: data.user.email,
+          full_name: name,
+        });
+
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        throw profileError;
+      }
+
+      console.log('User profile created successfully');
+
+      // Step 3: Create default account for the user
+      const { data: account, error: accountError } = await supabase
+        .from('accounts')
+        .insert([{ 
+          name: `${name}'s Clinic`,
+          email: email 
+        }])
+        .select()
+        .single();
+
+      if (accountError) {
+        console.error('Account creation error:', accountError);
+        throw accountError;
+      }
+
+      console.log('Account created successfully');
+
+      // Step 4: Link user to account
+      const { error: linkError } = await supabase
+        .from('accounts_users')
+        .insert([{ 
+          account_id: account.id, 
+          user_id: data.user.id, 
+          role: 'owner' 
+        }]);
+
+      if (linkError) {
+        console.error('Account linking error:', linkError);
+        throw linkError;
+      }
+
+      console.log('Account linked successfully');
+    } catch (error) {
+      console.error('Signup process failed:', error);
+      throw error;
+    }
   };
 
   const signOut = async () => {

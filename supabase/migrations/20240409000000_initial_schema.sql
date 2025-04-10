@@ -190,29 +190,10 @@ ALTER TABLE financial_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE employees ENABLE ROW LEVEL SECURITY;
 
--- Create helper function for account access check
-CREATE OR REPLACE FUNCTION has_account_access(account_id UUID)
-RETURNS BOOLEAN
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-BEGIN
-    RETURN EXISTS (
-        SELECT 1 FROM accounts_users
-        WHERE accounts_users.user_id = auth.uid()
-        AND accounts_users.account_id = has_account_access.account_id
-    );
-END;
-$$;
-
 -- Create policies for all tables
 CREATE POLICY "accounts_select_policy" ON accounts
     FOR SELECT TO authenticated
-    USING (EXISTS (
-        SELECT 1 FROM accounts_users
-        WHERE accounts_users.user_id = auth.uid()
-        AND accounts_users.account_id = accounts.id
-    ));
+    USING (has_account_access(id));
 
 CREATE POLICY "accounts_insert_policy" ON accounts
     FOR INSERT TO authenticated
@@ -220,7 +201,7 @@ CREATE POLICY "accounts_insert_policy" ON accounts
 
 CREATE POLICY "accounts_update_policy" ON accounts
     FOR UPDATE TO authenticated
-    USING (EXISTS (
+    USING (has_account_access(id) AND EXISTS (
         SELECT 1 FROM accounts_users
         WHERE accounts_users.user_id = auth.uid()
         AND accounts_users.account_id = accounts.id
@@ -229,7 +210,7 @@ CREATE POLICY "accounts_update_policy" ON accounts
 
 CREATE POLICY "accounts_delete_policy" ON accounts
     FOR DELETE TO authenticated
-    USING (EXISTS (
+    USING (has_account_access(id) AND EXISTS (
         SELECT 1 FROM accounts_users
         WHERE accounts_users.user_id = auth.uid()
         AND accounts_users.account_id = accounts.id

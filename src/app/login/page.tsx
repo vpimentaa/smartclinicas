@@ -2,107 +2,109 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
-import { toast } from '@/components/ui/use-toast'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { useAuth } from '@/hooks/use-auth'
+import { Button } from '@/components/ui/button'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+
+const formSchema = z.object({
+  email: z.string().email('Email inválido'),
+  password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
+})
+
+type FormData = z.infer<typeof formSchema>
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const { signIn } = useAuth()
   const router = useRouter()
+  const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  })
 
+  const onSubmit = async (data: FormData) => {
     try {
-      await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
+      setError(null)
+      await signIn(data.email, data.password)
       router.push('/dashboard')
-    } catch {
-      toast({
-        title: 'Erro',
-        description: 'Email ou senha inválidos.',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsLoading(false)
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Email ou senha inválidos.'
+      setError(errorMessage)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Entre na sua conta
-          </h2>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="email-address" className="sr-only">
-                Email
-              </label>
-              <input
-                id="email-address"
+    <div className="container relative flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-1 lg:px-0">
+      <Card className="lg:p-8">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl text-center">
+            Entrar
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
                 name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Senha
-              </label>
-              <input
-                id="password"
+              <FormField
+                control={form.control}
                 name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Senha"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Senha</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              {isLoading ? (
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              ) : (
-                'Entrar'
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
               )}
-            </button>
-          </div>
-          <div className="text-center">
-            <p className="text-sm text-gray-600">
-              Ainda não tem conta?{' '}
-              <a
-                href="/register"
-                className="font-medium text-indigo-600 hover:text-indigo-500"
-              >
-                Cadastre-se aqui
-              </a>
-            </p>
-          </div>
-        </form>
-      </div>
+              <Button type="submit" className="w-full">
+                Entrar
+              </Button>
+              <div className="text-center text-sm">
+                Ainda não tem conta?{' '}
+                <Button variant="link" className="p-0" onClick={() => router.push('/register')}>
+                  Cadastre-se aqui
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
     </div>
   )
 } 
